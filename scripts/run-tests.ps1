@@ -1,4 +1,4 @@
-param([switch]$Headed)
+param([switch]$Headed, [switch]$Security)
 
 $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -12,7 +12,8 @@ $env:ALLURE_CONFIG = Join-Path $runDir 'allureConfig.json'
 $env:UTC_EVIDENCE_DIR = Join-Path $runDir 'screenshots'
 $env:UTC_HEADLESS = if ($Headed) { 'false' } else { 'true' }
 @{allure=@{directory=$allureResults}} | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $env:ALLURE_CONFIG -Encoding utf8
-dotnet test (Join-Path $root 'UTC.LoginTests/UTC.LoginTests.csproj') --logger 'trx;LogFileName=results.trx' --results-directory $runDir
+$filter = if ($Security) { 'TestCategory=Security' } else { 'TestCategory!=Security' }
+dotnet test (Join-Path $root 'UTC.LoginTests/UTC.LoginTests.csproj') --filter $filter --logger 'trx;LogFileName=results.trx' --results-directory $runDir
 $testExit = $LASTEXITCODE
 py -X utf8 (Join-Path $root 'scripts/update_execution.py') $runDir $runId
 Write-Output "Run ID: $runId"

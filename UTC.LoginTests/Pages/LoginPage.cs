@@ -35,6 +35,8 @@ public sealed class LoginPage : BasePage
 
     public bool IsFormVisible => Driver.FindElements(Form).Any(e => e.Displayed);
 
+    public string BodyText => Driver.FindElement(By.TagName("body")).Text;
+
     public bool HasGuard => Driver.FindElement(By.TagName("body")).Text.Contains("CAPTCHA", StringComparison.OrdinalIgnoreCase)
         || Driver.FindElement(By.TagName("body")).Text.Contains("quá nhiều lần", StringComparison.OrdinalIgnoreCase)
         || Driver.FindElement(By.TagName("body")).Text.Contains("tạm khóa", StringComparison.OrdinalIgnoreCase);

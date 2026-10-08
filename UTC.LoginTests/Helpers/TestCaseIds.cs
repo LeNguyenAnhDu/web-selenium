@@ -4,7 +4,8 @@ public static class TestCaseIds
 {
     public static string FromTestName(string name)
     {
-        if (name.StartsWith("TC-LOGIN-", StringComparison.Ordinal)) return name.Split('_')[0];
+        if (name.StartsWith("TC-LOGIN-", StringComparison.Ordinal) || name.StartsWith("SEC-LOGIN-", StringComparison.Ordinal))
+            return name.Split('_')[0];
         return name switch
         {
             "FakeAccountShowsAuthenticationError" => "TC-LOGIN-004",

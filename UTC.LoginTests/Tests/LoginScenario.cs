@@ -8,14 +8,14 @@ namespace UTC.LoginTests.Tests;
 
 public abstract class LoginScenario : BaseTest
 {
-    protected LoginPage OpenPage(string id, string description, SeverityLevel severity)
+    protected LoginPage OpenPage(string id, string description, SeverityLevel severity, string? targetUrl = null)
     {
         AllureApi.SetTestName($"{id} — {description}");
         AllureApi.SetDescription(description);
         AllureApi.SetSeverity(severity);
         AllureApi.AddLabel("testCaseId", id);
         return AllureApi.Step("Mở trang đăng nhập", () =>
-            new LoginPage(Driver, TimeSpan.FromSeconds(Settings.TimeoutSeconds)).Open(Settings.Url));
+            new LoginPage(Driver, TimeSpan.FromSeconds(Settings.TimeoutSeconds)).Open(targetUrl ?? Settings.Url));
     }
 
     protected string SubmitAndWait(LoginPage page, string username, string password)
