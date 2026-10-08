@@ -1,0 +1,9 @@
+**/bin/
+**/obj/
+.vs/
+TestResults/
+runs/
+*.trx
+probe_login.py
+probe_results.json
+login_observed.html
