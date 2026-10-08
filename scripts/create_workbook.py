@@ -16,6 +16,10 @@ cases = [
     ('TC-LOGIN-004', 'Xác thực thất bại', 'Tài khoản giả dùng riêng cho kiểm thử', 'Xác nhận phản hồi xác thực thất bại', 'utc_qa_nonexistent_20261008', 'TestOnly!2026', 'Tài khoản hoặc mật khẩu không đúng.', 'Critical', 'Có', 'FakeAccountShowsAuthenticationError'),
     ('TC-LOGIN-005', 'Xác thực thất bại', 'Hai trường chỉ chứa khoảng trắng', 'Xác nhận hành vi thực tế với khoảng trắng', '[3 dấu cách]', '[3 dấu cách]', 'Tài khoản hoặc mật khẩu không đúng.', 'Normal', 'Có', 'WhitespaceFieldsShowAuthenticationError'),
     ('TC-LOGIN-006', 'Giao diện', 'Mật khẩu được che', 'Xác nhận ô mật khẩu che ký tự khi nhập', '', 'TestOnly!2026', 'Ô mật khẩu có type=password sau khi nhập; không gửi form.', 'Normal', 'Có', 'PasswordInputIsMasked'),
+    ('SEC-LOGIN-001', 'SQL injection', 'Dấu nháy đơn trong username', 'Phát hiện lỗi SQL lộ ra giao diện hoặc vượt qua xác thực', "'", 'TestOnly!2026', 'Form còn hiển thị; có lỗi từ ứng dụng; không lộ lỗi SQL/DB.', 'Critical', 'Có điều kiện: staging', 'UsernameQuoteDoesNotExposeSqlErrorOrAuthenticate'),
+    ('SEC-LOGIN-002', 'SQL injection', 'Dấu nháy đơn trong password', 'Phát hiện lỗi SQL lộ ra giao diện hoặc vượt qua xác thực', 'utc_qa_nonexistent_20261008', "'", 'Form còn hiển thị; có lỗi từ ứng dụng; không lộ lỗi SQL/DB.', 'Critical', 'Có điều kiện: staging', 'PasswordQuoteDoesNotExposeSqlErrorOrAuthenticate'),
+    ('SEC-LOGIN-003', 'Rate limiting', 'Giới hạn thử đăng nhập liên tiếp', 'Kiểm tra tín hiệu giới hạn theo ngưỡng được phê duyệt', 'Tài khoản thử trên staging', 'Mật khẩu giả', 'Tín hiệu rate limit/CAPTCHA xuất hiện theo ngưỡng đã thống nhất.', 'Critical', 'Blocked: cần staging và ngưỡng', ''),
+    ('SEC-LOGIN-004', 'DDoS resilience', 'Duy trì dịch vụ trong tải đã phê duyệt', 'Đánh giá độ sẵn sàng với load profile và SLA được phê duyệt', 'Không dùng tài khoản thật', 'Không áp dụng', 'Đạt SLA đã thống nhất; không ảnh hưởng người dùng khác.', 'Normal', 'Blocked: cần staging, load plan và SLA', ''),
 ]
 
 wb = Workbook()
@@ -27,12 +31,28 @@ tc.append(['Test Case ID', 'Nhóm kiểm thử', 'Tên test case', 'Mục tiêu'
 ex.append(['Run ID', 'Test Case ID', 'Thời điểm chạy và múi giờ', 'Môi trường/trình duyệt', 'Kết quả thực tế', 'Trạng thái', 'Nguyên nhân lỗi hoặc lý do chưa chạy', 'Đường dẫn screenshot/evidence', 'Đường dẫn hoặc mã tham chiếu kết quả Allure'])
 
 for id, group, name, goal, username, password, expected, priority, automation, method in cases:
-    steps = '1. Mở https://vanphongdientu.utc.edu.vn/Login\n2. Nhập dữ liệu trong cột username/password\n'
-    steps += '3. Gửi form\n4. Chờ phản hồi\n5. Kiểm tra lỗi và form' if id != 'TC-LOGIN-006' else '3. Kiểm tra kiểu ô mật khẩu; không gửi form'
-    result = expected if id == 'TC-LOGIN-006' else f'Hiển thị div.error: “{expected}”; form đăng nhập vẫn hiển thị.'
-    basis = 'DOM và hành vi quan sát bằng Chrome headless ngày 08/10/2026; không phải yêu cầu sản phẩm đã xác nhận.'
-    tc.append([id, group, name, goal, 'Truy cập được trang; không có CAPTCHA/khóa/rate limit.', username, password, steps, result, basis, priority, automation, method])
-    ex.append(['INITIAL', id, '', '', 'Chưa chạy project NUnit', 'Not Run', 'Chưa thực thi project kiểm thử', '', ''])
+    if id.startswith('SEC-LOGIN-'):
+        prerequisite = 'Cần staging được phép kiểm thử; UTC_SECURITY_TESTS_ENABLED=true và UTC_SECURITY_URL hợp lệ.'
+        basis = 'Kịch bản an ninh tham chiếu OWASP WSTG; kỳ vọng cần xác nhận trên staging, chưa quan sát production.'
+        if id in ('SEC-LOGIN-001', 'SEC-LOGIN-002'):
+            steps = '1. Cấu hình staging được phép thử\n2. Mở trang Login staging\n3. Nhập dữ liệu giả và dấu nháy đơn vào trường chỉ định\n4. Gửi form một lần\n5. Kiểm tra form và lỗi SQL lộ ra giao diện'
+        elif id == 'SEC-LOGIN-003':
+            prerequisite += ' Cần ngưỡng/tín hiệu rate limiting đã xác nhận và tài khoản thử riêng.'
+            steps = '1. Phê duyệt ngưỡng và số lần gửi tối đa\n2. Chạy tuần tự trên staging với tài khoản thử\n3. Dừng ngay khi thấy CAPTCHA/khóa/rate limit\n4. So sánh với ngưỡng đã thống nhất'
+        else:
+            prerequisite += ' Cần load profile, SLA và phương án dừng đã phê duyệt.'
+            steps = '1. Phê duyệt kế hoạch tải và môi trường cô lập\n2. Chạy bằng công cụ performance phù hợp\n3. Theo dõi latency, error rate và tài nguyên\n4. Dừng tại ngưỡng an toàn và so sánh SLA'
+        result = expected
+        initial_reason = 'Chưa có staging/ngưỡng/SLA được xác nhận; chưa thực thi.'
+    else:
+        prerequisite = 'Truy cập được trang; không có CAPTCHA/khóa/rate limit.'
+        steps = '1. Mở https://vanphongdientu.utc.edu.vn/Login\n2. Nhập dữ liệu trong cột username/password\n'
+        steps += '3. Gửi form\n4. Chờ phản hồi\n5. Kiểm tra lỗi và form' if id != 'TC-LOGIN-006' else '3. Kiểm tra kiểu ô mật khẩu; không gửi form'
+        result = expected if id == 'TC-LOGIN-006' else f'Hiển thị div.error: “{expected}”; form đăng nhập vẫn hiển thị.'
+        basis = 'DOM và hành vi quan sát bằng Chrome headless ngày 08/10/2026; không phải yêu cầu sản phẩm đã xác nhận.'
+        initial_reason = 'Chưa thực thi project kiểm thử'
+    tc.append([id, group, name, goal, prerequisite, username, password, steps, result, basis, priority, automation, method])
+    ex.append(['INITIAL', id, '', '', 'Chưa chạy project NUnit', 'Not Run', initial_reason, '', ''])
 
 su['A1'] = 'TỔNG HỢP KIỂM THỬ ĐĂNG NHẬP UTC'
 su['A3'] = 'Tổng số test case'

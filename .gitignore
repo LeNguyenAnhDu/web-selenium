@@ -7,3 +7,5 @@ runs/
 probe_login.py
 probe_results.json
 login_observed.html
+__pycache__/
+*.pyc

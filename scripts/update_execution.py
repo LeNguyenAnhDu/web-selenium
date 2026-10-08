@@ -26,7 +26,7 @@ method_to_id = {
 }
 for item in tree.findall('.//t:UnitTestResult', ns):
     name = item.get('testName', '')
-    match = re.search(r'TC-LOGIN-\d{3}', name)
+    match = re.search(r'(?:TC|SEC)-LOGIN-\d{3}', name)
     id = match.group() if match else method_to_id.get(name)
     if not id:
         continue
