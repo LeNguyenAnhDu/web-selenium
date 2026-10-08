@@ -1,18 +1,9 @@
-using NUnit.Framework;
-
 namespace UTC.LoginTests.TestData;
 
 public static class LoginCases
 {
     public const string FakeUsername = "utc_qa_nonexistent_20261008";
     public const string FakePassword = "TestOnly!2026";
-
-    public static IEnumerable<TestCaseData> MissingFields()
-    {
-        yield return new TestCaseData("TC-LOGIN-001").SetName("TC-LOGIN-001_BothFieldsEmpty");
-        yield return new TestCaseData("TC-LOGIN-002").SetName("TC-LOGIN-002_PasswordEmpty");
-        yield return new TestCaseData("TC-LOGIN-003").SetName("TC-LOGIN-003_UsernameEmpty");
-    }
 
     public static (string Username, string Password, string ExpectedError) ForId(string id) => id switch
     {
